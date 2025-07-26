@@ -1,0 +1,54 @@
+# Render設定ファイル
+services:
+  - type: web
+    name: social-insurance-news
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    plan: free
+    region: oregon
+    branch: main
+    
+    # 環境変数
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: FLASK_ENV
+        value: production
+      - key: TZ
+        value: Asia/Tokyo
+      - key: OPENAI_API_KEY
+        sync: false  # Renderダッシュボードで設定
+      - key: I_MOBILE_SITE_ID
+        sync: false  # 広告設定
+      - key: ZUCKS_SITE_ID  
+        sync: false  # 広告設定
+    
+    # ヘルスチェック
+    healthCheckPath: /health
+    
+    # 自動デプロイ設定
+    autoDeploy: true
+
+  # Cron Job - 毎朝4時更新
+  - type: cron
+    name: news-update-job
+    env: python
+    buildCommand: pip install -r requirements.txt
+    schedule: "0 19 * * *"  # UTC 19:00 = JST 04:00
+    startCommand: python scripts/main_automation.py
+    
+    # 環境変数（Web版と共通）
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: TZ
+        value: Asia/Tokyo
+      - key: OPENAI_API_KEY
+        sync: false
+
+# データベース（無料PostgreSQL）
+databases:
+  - name: social-insurance-db
+    plan: free
+    region: oregon
