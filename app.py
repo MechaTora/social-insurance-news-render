@@ -86,6 +86,11 @@ def index():
     
     return render_template('index.html', **context)
 
+@app.route('/privacy')
+def privacy():
+    """プライバシーポリシーページ"""
+    return render_template('privacy.html')
+
 @app.route('/api/news')
 def api_news():
     """ニュースAPI（JSON）"""
