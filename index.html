@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>社会保険ニュース - 最新情報まとめ（スマホ版）</title>
+    <meta name="description" content="社会保険に関する最新ニュースを自動収集・要約してお届け。健康保険、厚生年金、雇用保険などの重要な変更情報をスマホで手軽にチェック。">
+    <meta name="keywords" content="社会保険,ニュース,健康保険,厚生年金,雇用保険,労災保険,介護保険,年金,スマホ">
+    
+    <!-- Google Site Verification -->
+    <meta name="google-site-verification" content="Gp4HxUkM86ol7y-zJqXaY1zql-Fw_weksAQWIDO-7gI" />
+    
+    <!-- PWA対応 -->
+    <meta name="theme-color" content="#4A90E2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- i-mobile/Zucks広告用スクリプト -->
+    <!-- 実際の広告コードは取得後に挿入 -->
+    <script>
+        // 広告初期化用（実装時に更新）
+        window.adConfig = {
+            provider: 'i-mobile', // or 'zucks'
+            siteId: 'YOUR_SITE_ID',
+            adUnits: {
+                header: 'HEADER_AD_UNIT',
+                middle: 'MIDDLE_AD_UNIT', 
+                footer: 'FOOTER_AD_UNIT'
+            }
+        };
+    </script>
+    
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --accent: #FF8C42;
+            --bg: #F8FAFC;
+            --surface: #FFFFFF;
+            --text: #2D3748;
+            --text-light: #718096;
+            --border: #E2E8F0;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+            --radius: 8px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            font-size: 14px;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* ヘッダー - スマホ最適化 */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #2B6CB0 100%);
+            color: white;
+            padding: 16px 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            text-align: center;
+        }
+        
+        .header .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        
+        .last-updated {
+            background: rgba(255,255,255,0.15);
+            padding: 6px 12px;
+            border-radius: var(--radius);
+            font-size: 0.8rem;
+            text-align: center;
+            margin: 0 auto;
+            display: inline-block;
+            width: 100%;
+            max-width: 200px;
+        }
+        
+        /* 広告エリア - スマホサイズ */
+        .ad-container {
+            background: var(--surface);
+            margin: 8px;
+            padding: 8px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .ad-placeholder {
+            color: var(--text-light);
+            font-size: 0.8rem;
+            padding: 20px;
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            width: 100%;
+        }
+        
+        /* 統計カード - 横スクロール */
+        .stats-container {
+            padding: 16px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .stats-grid {
+            display: flex;
+            gap: 12px;
+            min-width: max-content;
+        }
+        
+        .stat-card {
+            background: var(--surface);
+            padding: 16px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            min-width: 100px;
+            flex-shrink: 0;
+        }
+        
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* ニュースカード - スマホ最適化 */
+        .news-container {
+            padding: 0 16px 80px;
+        }
+        
+        .news-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        
+        .news-header {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .news-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        /* カテゴリカラー */
+        .category-健康保険 { background: #E6F7FF; color: #1890FF; }
+        .category-厚生年金 { background: #F6FFED; color: #52C41A; }
+        .category-雇用保険 { background: #FFF7E6; color: #FA8C16; }
+        .category-労災保険 { background: #FFF1F0; color: #FF4D4F; }
+        .category-介護保険 { background: #F9F0FF; color: #722ED1; }
+        .category-社会保険全般 { background: #F0F0F0; color: #595959; }
+        .category-その他 { background: #F0F0F0; color: #8C8C8C; }
+        
+        /* 重要度カラー */
+        .importance-高 { background: #FFE7E7; color: #FF4D4F; }
+        .importance-中 { background: #FFF7E6; color: #FA8C16; }
+        .importance-低 { background: #F6FFED; color: #52C41A; }
+        
+        .source-tag {
+            background: var(--bg);
+            color: var(--text-light);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+        }
+        
+        .news-title {
+            font-size: 1rem;
+            font-weight: 600;
+            line-height: 1.4;
+            margin: 0;
+        }
+        
+        .news-title a {
+            color: var(--text);
+            text-decoration: none;
+            display: block;
+        }
+        
+        .news-title a:active {
+            color: var(--primary);
+        }
+        
+        .news-body {
+            padding: 12px;
+        }
+        
+        .news-summary {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .keyword-tag {
+            background: var(--bg);
+            color: var(--text-light);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            border: 1px solid var(--border);
+        }
+        
+        .news-footer {
+            padding: 12px;
+            background: var(--bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+        }
+        
+        .read-more-btn {
+            background: var(--primary);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            touch-action: manipulation;
+        }
+        
+        .read-more-btn:active {
+            background: #2B6CB0;
+        }
+        
+        .published-date {
+            color: var(--text-light);
+            font-size: 0.8rem;
+        }
+        
+        /* 読み込み中アニメーション */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* フッター */
+        .footer {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 20px 16px;
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+        
+        /* スクロールバー非表示 */
+        .stats-container::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* タッチ操作最適化 */
+        .news-card {
+            touch-action: manipulation;
+        }
+        
+        /* 安全エリア対応 */
+        @supports (padding: max(0px)) {
+            .header {
+                padding-top: max(16px, env(safe-area-inset-top));
+            }
+            
+            .news-container {
+                padding-bottom: max(80px, env(safe-area-inset-bottom) + 80px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <h1>🏛️ 社会保険ニュース</h1>
+        <div class="subtitle">毎朝4時に自動更新・スマホ特化版</div>
+        <div class="last-updated">
+            最終更新: {{ last_updated }}
+        </div>
+    </header>
+    
+    <!-- ヘッダー広告 -->
+    <div class="ad-container">
+        <div id="header-ad">
+            <a href="https://px.a8.net/svt/ejp?a8mat=459YIV+20MWKY+2PEO+O4P5D" rel="nofollow">
+            <img border="0" width="320" height="50" alt="" src="https://www24.a8.net/svt/bgt?aid=250727431122&wid=001&eno=01&mid=s00000012624004053000&mc=1"></a>
+            <img border="0" width="1" height="1" src="https://www11.a8.net/0.gif?a8mat=459YIV+20MWKY+2PEO+O4P5D" alt="">
+        </div>
+    </div>
+    
+    <!-- 統計情報 -->
+    <section class="stats-container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_count }}</div>
+                <div class="stat-label">総ニュース</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ high_importance }}</div>
+                <div class="stat-label">重要ニュース</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ category_count }}</div>
+                <div class="stat-label">カテゴリ</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ today_count }}</div>
+                <div class="stat-label">本日更新</div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ニュース一覧 -->
+    <main class="news-container">
+        {% for item in news %}
+        <article class="news-card">
+            <header class="news-header">
+                <div class="news-meta">
+                    <span class="badge category-{{ item.category }}">
+                        {% if item.category == '健康保険' %}🏥
+                        {% elif item.category == '厚生年金' %}💰
+                        {% elif item.category == '雇用保険' %}💼
+                        {% elif item.category == '労災保険' %}🚨
+                        {% elif item.category == '介護保険' %}🤝
+                        {% elif item.category == '社会保険全般' %}📋
+                        {% else %}📄
+                        {% endif %}
+                        {{ item.category }}
+                    </span>
+                    
+                    <span class="badge importance-{{ item.importance }}">
+                        {% if item.importance == '高' %}🚨
+                        {% elif item.importance == '中' %}⚠️
+                        {% else %}ℹ️
+                        {% endif %}
+                        {{ item.importance }}
+                    </span>
+                    
+                    <span class="source-tag">{{ item.source }}</span>
+                </div>
+                
+                <h2 class="news-title">
+                    <a href="{{ item.url }}" target="_blank" rel="noopener">
+                        {{ item.title[:80] }}{% if item.title|length > 80 %}...{% endif %}
+                    </a>
+                </h2>
+            </header>
+            
+            <div class="news-body">
+                <p class="news-summary">
+                    {{ item.summary[:100] }}{% if item.summary|length > 100 %}...{% endif %}
+                </p>
+                
+                {% if item.keywords %}
+                <div class="keywords">
+                    {% for keyword in item.keywords[:4] %}
+                    <span class="keyword-tag">{{ keyword }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <footer class="news-footer">
+                <span class="published-date">
+                    {% if item.published_date %}{{ item.published_date }}{% else %}日付不明{% endif %}
+                </span>
+                <a href="{{ item.url }}" target="_blank" rel="noopener" class="read-more-btn">
+                    元記事
+                </a>
+            </footer>
+        </article>
+        
+        <!-- 中間広告（5件ごと） -->
+        {% if loop.index % 5 == 0 %}
+        <div class="ad-container">
+            <div id="middle-ad-{{ loop.index }}">
+                <a href="https://px.a8.net/svt/ejp?a8mat=459YIV+1Y965U+0K+11HG8X" rel="nofollow">
+                <img border="0" width="320" height="50" alt="" src="https://www26.a8.net/svt/bgt?aid=250727431118&wid=001&eno=01&mid=s00000000002006296000&mc=1"></a>
+                <img border="0" width="1" height="1" src="https://www15.a8.net/0.gif?a8mat=459YIV+1Y965U+0K+11HG8X" alt="">
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+        
+        {% if not news %}
+        <div class="loading">
+            <div class="spinner"></div>
+            <span style="margin-left: 8px;">ニュースを読み込み中...</span>
+        </div>
+        {% endif %}
+    </main>
+    
+    <!-- フッター広告 -->
+    <div class="ad-container">
+        <div id="footer-ad">
+            <a href="https://rpx.a8.net/svt/ejp?a8mat=459YIV+1ZG1DE+2HOM+67JU9&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa25072799744_459YIV_1ZG1DE_2HOM_67JU9%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
+            <img src="http://hbb.afl.rakuten.co.jp/hsb/0ec09ba3.bc2429d5.0eb4bbaa.95151395/" border="0"></a>
+            <img border="0" width="1" height="1" src="https://www14.a8.net/0.gif?a8mat=459YIV+1ZG1DE+2HOM+67JU9" alt="">
+        </div>
+    </div>
+    
+    <!-- SEOキーワードセクション -->
+    <section style="background: var(--bg); padding: 30px 16px; border-top: 1px solid var(--border);">
+        <div style="max-width: 800px; margin: 0 auto;">
+            <h3 style="color: var(--primary); font-size: 1.1rem; margin-bottom: 16px; text-align: center;">
+                🔍 関連キーワード・検索ワード
+            </h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; line-height: 1.8;">
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">社会保険</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">法改正</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">法改正まとめ</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">まとめ</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">ニュース</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">年金</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">社会保険料計算</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">厚生年金保険料</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">健康保険料率</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">雇用保険手続き</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">労災保険給付</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">介護保険制度</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">年金受給額</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">社会保険変更手続き</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">健保組合</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">厚生労働省発表</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">令和7年度改定</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">社労士相談</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">給与計算</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">退職手続き</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">失業保険</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">傷病手当金</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">出産育児一時金</span>
+                <span style="background: var(--surface); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-light);">高額療養費</span>
+            </div>
+            <p style="text-align: center; margin-top: 16px; font-size: 0.7rem; color: var(--text-light);">
+                毎朝4時に厚生労働省・年金機構の最新情報を自動更新｜スマホ最適化｜社会保険の疑問解決
+            </p>
+        </div>
+    </section>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <p>&copy; 2025 社会保険ニュース・スマホ版</p>
+        <p>データソース: 厚生労働省・日本年金機構・Yahoo!ニュース</p>
+        <p style="margin-top: 8px;">
+            このサイトは公的機関・ニュースサイトの発表情報を<br>
+            自動収集・要約したものです。詳細は元記事をご確認ください。
+        </p>
+        <p style="margin-top: 12px;">
+            <a href="/privacy" style="color: var(--primary-color); text-decoration: none;">📋 プライバシーポリシー</a>
+        </p>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script>
+        // タッチ操作の最適化
+        document.addEventListener('DOMContentLoaded', function() {
+            // スムーズスクロール
+            const cards = document.querySelectorAll('.news-card');
+            cards.forEach(card => {
+                card.addEventListener('touchstart', function() {
+                    this.style.transform = 'scale(0.98)';
+                });
+                card.addEventListener('touchend', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+            
+            // 横スクロールのヒント
+            const statsContainer = document.querySelector('.stats-container');
+            let isScrolled = false;
+            
+            statsContainer.addEventListener('scroll', function() {
+                if (!isScrolled) {
+                    isScrolled = true;
+                    // スクロールされたことを記録
+                }
+            });
+            
+            // 広告の遅延読み込み
+            setTimeout(loadAds, 1000);
+        });
+        
+        function loadAds() {
+            // 実際の広告実装時にここを更新
+            // i-mobile または Zucks の広告スクリプトを実行
+            console.log('広告読み込み準備完了');
+            
+            // 例: i-mobile広告の実装
+            // if (window.adConfig.provider === 'i-mobile') {
+            //     // i-mobile広告コード
+            // }
+        }
+        
+        // PWA対応 - Service Worker登録
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(function(registrationError) {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
