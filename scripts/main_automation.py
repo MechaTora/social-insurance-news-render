@@ -1,13 +1,7 @@
 #!/usr/bin/env python3
 """
-社会保険ニュース自動収集システム
-GitHubリポジトリ用 - main_automation.py
-
-主な改善点:
-1. Yahoo!ニュースのURLを正確に取得
-2. URLの有効性チェック
-3. 改善されたエラーハンドリング
-4. レート制限対応
+社会保険ニュース自動収集システム（Ver 2.0）
+より確実なリンク取得のための完全改良版
 """
 
 import requests
@@ -20,24 +14,19 @@ from urllib.parse import urljoin, urlparse
 import re
 import hashlib
 
-class SocialInsuranceNewsScraper:
+class SocialInsuranceNewsScraperV2:
     def __init__(self):
         self.session = requests.Session()
         
-        # User-Agentをランダム化してブロックを回避
-        user_agents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
-        ]
-        
+        # より信頼性の高いUser-Agent
         self.session.headers.update({
-            'User-Agent': random.choice(user_agents),
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'ja,en-US;q=0.5',
             'Accept-Encoding': 'gzip, deflate',
             'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1'
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'no-cache'
         })
         
         self.categories = {
@@ -49,16 +38,8 @@ class SocialInsuranceNewsScraper:
             '社会保険全般': ['社会保険', '社会保障', '厚生労働省']
         }
         
-    def is_valid_url(self, url):
-        """URLの有効性をチェック"""
-        try:
-            result = urlparse(url)
-            return all([result.scheme, result.netloc]) and result.scheme in ['http', 'https']
-        except:
-            return False
-    
-    def safe_request(self, url, timeout=15, retries=3):
-        """安全なHTTPリクエスト（リトライ機能付き）"""
+    def safe_request(self, url, timeout=20, retries=3):
+        """安全なHTTPリクエスト"""
         for attempt in range(retries):
             try:
                 response = self.session.get(url, timeout=timeout)
@@ -67,92 +48,117 @@ class SocialInsuranceNewsScraper:
             except Exception as e:
                 print(f"⚠️ Request failed (attempt {attempt + 1}/{retries}): {e}")
                 if attempt < retries - 1:
-                    time.sleep(random.uniform(2, 5))
+                    time.sleep(random.uniform(3, 6))
                 else:
                     return None
         return None
     
-    def scrape_yahoo_news(self, search_term, max_articles=5):
-        """Yahoo!ニュースから記事を取得（改善版）"""
+    def scrape_yahoo_news_direct(self, search_term, max_articles=5):
+        """Yahoo!ニュースから直接的に記事を取得"""
         articles = []
-        search_url = f"https://news.yahoo.co.jp/search?p={search_term}&ei=UTF-8"
         
-        print(f"🔍 Yahoo!ニュース検索: {search_term}")
+        # 複数のYahoo!ニュースURLを試行
+        search_urls = [
+            f"https://news.yahoo.co.jp/search?p={search_term}&ei=UTF-8",
+            f"https://news.yahoo.co.jp/search?p={search_term}"
+        ]
         
-        response = self.safe_request(search_url)
-        if not response:
-            print(f"❌ Yahoo!ニュース取得失敗: {search_term}")
-            return articles
+        for search_url in search_urls:
+            print(f"🔍 Yahoo!ニュース検索: {search_term} ({search_url})")
             
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
-        # 複数のセレクタパターンで記事リンクを取得
-        article_links = []
-        
-        # パターン1: 記事URL直接
-        links1 = soup.select('a[href*="/articles/"]')
-        article_links.extend(links1)
-        
-        # パターン2: ニュースフィード内のリンク
-        links2 = soup.select('[class*="news"] a[href*="/articles/"]')
-        article_links.extend(links2)
-        
-        # パターン3: 一般的なリンク（/articles/を含む）
-        all_links = soup.find_all('a', href=True)
-        for link in all_links:
-            href = link.get('href', '')
-            if '/articles/' in href and 'news.yahoo.co.jp' in href:
-                article_links.append(link)
-        
-        print(f"📰 発見されたリンク数: {len(article_links)}")
-        
-        processed_urls = set()
-        
-        for link in article_links:
+            response = self.safe_request(search_url)
+            if not response:
+                continue
+                
+            # 検索結果ページから記事URLを抽出
+            page_text = response.text
+            
+            # 正規表現でYahoo!ニュースの記事URLを直接抽出
+            article_url_pattern = r'https://news\.yahoo\.co\.jp/articles/[a-zA-Z0-9]+'
+            found_urls = re.findall(article_url_pattern, page_text)
+            
+            # 重複除去
+            unique_urls = list(set(found_urls))
+            print(f"📰 発見された記事URL数: {len(unique_urls)}")
+            
+            for article_url in unique_urls[:max_articles * 2]:  # 多めに取得
+                if len(articles) >= max_articles:
+                    break
+                    
+                # 各記事ページにアクセスしてタイトルを取得
+                article_data = self.get_article_details(article_url)
+                if article_data and self.is_social_insurance_related(article_data['title']):
+                    articles.append(article_data)
+                    print(f"✅ Yahoo!記事追加: {article_data['title'][:50]}...")
+                    
+                # レート制限
+                time.sleep(random.uniform(1, 3))
+                
             if len(articles) >= max_articles:
                 break
                 
-            href = link.get('href', '')
-            if not href or href in processed_urls:
-                continue
+        return articles
+    
+    def get_article_details(self, article_url):
+        """記事URLから詳細情報を取得"""
+        try:
+            response = self.safe_request(article_url)
+            if not response:
+                return None
                 
-            # 完全URLに変換
-            if href.startswith('/'):
-                full_url = f"https://news.yahoo.co.jp{href}"
-            elif href.startswith('http'):
-                full_url = href
-            else:
-                continue
-                
-            if not self.is_valid_url(full_url) or full_url in processed_urls:
-                continue
-                
-            processed_urls.add(full_url)
+            soup = BeautifulSoup(response.content, 'html.parser')
             
-            # タイトル取得
-            title = link.get_text(strip=True)
-            if not title or len(title) < 5:
-                continue
+            # タイトルを複数の方法で取得
+            title = ""
+            
+            # 方法1: titleタグ
+            title_tag = soup.find('title')
+            if title_tag:
+                title = title_tag.get_text(strip=True)
+                title = title.replace(' - Yahoo!ニュース', '').replace('｜Yahoo!ニュース', '')
+            
+            # 方法2: h1タグ
+            if not title or len(title) < 10:
+                h1_tag = soup.find('h1')
+                if h1_tag:
+                    title = h1_tag.get_text(strip=True)
+            
+            # 方法3: 記事タイトル専用クラス
+            if not title or len(title) < 10:
+                title_elements = soup.find_all(['h1', 'h2'], class_=re.compile(r'.*title.*|.*headline.*'))
+                for elem in title_elements:
+                    candidate_title = elem.get_text(strip=True)
+                    if len(candidate_title) > 10:
+                        title = candidate_title
+                        break
+            
+            if not title or len(title) < 10:
+                return None
                 
-            # 社会保険関連の記事かチェック
-            if not self.is_social_insurance_related(title):
-                continue
-                
+            # 公開日時を取得
+            published_date = None
+            time_elements = soup.find_all(['time', 'span'], class_=re.compile(r'.*date.*|.*time.*'))
+            for elem in time_elements:
+                date_text = elem.get_text(strip=True)
+                if re.search(r'\d{1,2}/\d{1,2}|\d{4}年\d{1,2}月\d{1,2}日', date_text):
+                    published_date = date_text
+                    break
+            
             # カテゴリ判定
             category = self.categorize_article(title)
             
             # 重要度判定
             importance = self.assess_importance(title)
             
-            article = {
-                'id': self.generate_id(title, full_url),
+            return {
+                'id': self.generate_id(title, article_url),
                 'title': title,
-                'url': full_url,
+                'url': article_url,
                 'source': 'Yahoo!ニュース',
                 'category': category,
                 'summary': f"【{category}】 {title[:50]}{'...' if len(title) > 50 else ''}",
                 'importance': importance,
-                'published_date': None,  # Yahoo!ニュースでは取得が困難
+                'published_date': published_date,
                 'scraped_at': datetime.now().isoformat(),
                 'keywords': self.extract_keywords(title),
                 'related_categories': [],
@@ -160,16 +166,14 @@ class SocialInsuranceNewsScraper:
                 'confidence_score': self.calculate_confidence(title, category)
             }
             
-            articles.append(article)
-            print(f"✅ Yahoo!記事追加: {title[:50]}...")
-            
-        return articles
+        except Exception as e:
+            print(f"⚠️ 記事詳細取得失敗: {article_url} - {e}")
+            return None
     
     def scrape_mhlw_news(self, max_articles=10):
-        """厚生労働省からニュースを取得（改善版）"""
+        """厚生労働省からニュースを取得"""
         articles = []
         
-        # 複数のMHLWページをチェック
         mhlw_urls = [
             'https://www.mhlw.go.jp/stf/houdou/houdou_list.html',
             'https://www.mhlw.go.jp/stf/houdou/',
@@ -184,34 +188,17 @@ class SocialInsuranceNewsScraper:
                 
             soup = BeautifulSoup(response.content, 'html.parser')
             
-            # MHLWサイトの記事リンクを取得
-            article_links = []
+            # MHLWサイトのリンクを取得
+            links = soup.find_all('a', href=True)
             
-            # パターン1: 報道発表リンク
-            links1 = soup.select('a[href*="/stf/houdou/"]')
-            article_links.extend(links1)
-            
-            # パターン2: 新着情報リンク
-            links2 = soup.select('a[href*="/stf/newpage_"]')
-            article_links.extend(links2)
-            
-            # パターン3: 一般的なリンクで社会保険関連
-            all_links = soup.find_all('a', href=True)
-            for link in all_links:
-                title = link.get_text(strip=True)
-                if self.is_social_insurance_related(title):
-                    article_links.append(link)
-            
-            processed_urls = set()
-            
-            for link in article_links:
+            for link in links:
                 if len(articles) >= max_articles:
                     break
                     
                 href = link.get('href', '')
                 title = link.get_text(strip=True)
                 
-                if not href or not title or href in processed_urls:
+                if not href or not title:
                     continue
                     
                 # 完全URLに変換
@@ -222,13 +209,12 @@ class SocialInsuranceNewsScraper:
                 else:
                     continue
                     
-                if not self.is_valid_url(full_url):
-                    continue
-                    
-                processed_urls.add(href)
-                
                 # 社会保険関連のフィルタリング
                 if not self.is_social_insurance_related(title):
+                    continue
+                    
+                # 既存URLの重複チェック
+                if any(article['url'] == full_url for article in articles):
                     continue
                     
                 # カテゴリ判定
@@ -236,9 +222,6 @@ class SocialInsuranceNewsScraper:
                 
                 # 重要度判定
                 importance = self.assess_importance(title)
-                
-                # 公開日を抽出（試行）
-                published_date = self.extract_mhlw_date(soup, link)
                 
                 article = {
                     'id': self.generate_id(title, full_url),
@@ -248,7 +231,7 @@ class SocialInsuranceNewsScraper:
                     'category': category,
                     'summary': f"【{category}】 {title[:50]}{'...' if len(title) > 50 else ''}",
                     'importance': importance,
-                    'published_date': published_date,
+                    'published_date': self.extract_mhlw_date(soup, link),
                     'scraped_at': datetime.now().isoformat(),
                     'keywords': self.extract_keywords(title),
                     'related_categories': [],
@@ -259,7 +242,6 @@ class SocialInsuranceNewsScraper:
                 articles.append(article)
                 print(f"✅ MHLW記事追加: {title[:50]}...")
                 
-            # サーバー負荷軽減
             time.sleep(random.uniform(2, 4))
             
         return articles
@@ -269,7 +251,7 @@ class SocialInsuranceNewsScraper:
         social_insurance_keywords = [
             '年金', '保険', '社会保険', '健康', '雇用', '労災', '介護',
             '厚生年金', '国民年金', '健康保険', '雇用保険', '労災保険', '介護保険',
-            '社会保障', '厚生労働省', 'ハローワーク', '給付'
+            '社会保障', '厚生労働省', 'ハローワーク', '給付', '保険料'
         ]
         
         return any(keyword in title for keyword in social_insurance_keywords)
@@ -366,17 +348,16 @@ class SocialInsuranceNewsScraper:
     
     def run_collection(self):
         """メインの収集処理"""
-        print("🚀 社会保険ニュース自動収集開始（修正版）")
+        print("🚀 社会保険ニュース自動収集開始（Ver 2.0）")
         
         all_articles = []
         
         # Yahoo!ニュースから収集
         yahoo_terms = ['社会保険', '厚生年金', '健康保険', '雇用保険', '介護保険']
         for term in yahoo_terms:
-            articles = self.scrape_yahoo_news(term, max_articles=3)
+            articles = self.scrape_yahoo_news_direct(term, max_articles=3)
             all_articles.extend(articles)
-            # レート制限対応
-            time.sleep(random.uniform(3, 6))
+            time.sleep(random.uniform(5, 8))  # より長い間隔
         
         # 厚生労働省から収集
         mhlw_articles = self.scrape_mhlw_news(max_articles=10)
@@ -454,7 +435,7 @@ class SocialInsuranceNewsScraper:
 
 def main():
     """メイン実行関数"""
-    scraper = SocialInsuranceNewsScraper()
+    scraper = SocialInsuranceNewsScraperV2()
     scraper.run_collection()
 
 if __name__ == "__main__":
