@@ -4,7 +4,7 @@ services:
     name: social-insurance-news
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:application
     plan: free
     region: oregon
     branch: main
